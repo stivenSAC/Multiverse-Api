@@ -8,8 +8,6 @@ public class MultiverseApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(MultiverseApplication.class, args);
-
-		//hol
 	}
 
 }
