@@ -22,6 +22,7 @@ public class PeliculaController {
         return ResponseEntity.ok(peliculaService.findAll());
     }
     
+
     @GetMapping("/{id}")
     public ResponseEntity<PeliculaDto> getPeliculaById(@PathVariable Long id) {
         return ResponseEntity.ok(peliculaService.findById(id));
