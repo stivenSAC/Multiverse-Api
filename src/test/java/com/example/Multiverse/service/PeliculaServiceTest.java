@@ -5,9 +5,10 @@ import com.example.Multiverse.entity.Pelicula;
 import com.example.Multiverse.repository.PeliculaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class PeliculaServiceTest {
 
     @Mock
@@ -29,7 +31,6 @@ class PeliculaServiceTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         testPelicula = new Pelicula(1L, "Matrix", "Sci-Fi", 1999, "Wachowski", 136, 8.7);
         testPeliculaDto = createPeliculaDto();
     }
