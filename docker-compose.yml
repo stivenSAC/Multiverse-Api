@@ -1,9 +1,7 @@
-version: "3.9"
-
 services:
-  app:
+  app1:
     build: .
-    container_name: multiverse_app
+    container_name: multiverse-app1
     ports:
       - "8080:8080"
     depends_on:
@@ -13,9 +11,21 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
 
+  app2:
+    build: .
+    container_name: multiverse-app2
+    ports:
+      - "8081:8080"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/multiverse
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
   db:
     image: postgres:15
-    container_name: multiverse_db
+    container_name: multiverse-db
     restart: always
     environment:
       POSTGRES_USER: postgres
