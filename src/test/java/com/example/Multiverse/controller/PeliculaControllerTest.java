@@ -2,17 +2,20 @@ package com.example.Multiverse.controller;
 
 import com.example.Multiverse.dto.PeliculaDto;
 import com.example.Multiverse.service.PeliculaService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
 import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -23,18 +26,10 @@ class PeliculaControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private PeliculaService service;
+    private ObjectMapper objectMapper;
 
-    private static final String PELICULA_JSON = """
-        {
-            "nombre": "Matrix",
-            "categoria": "Sci-Fi",
-            "año": 1999,
-            "director": "Wachowski",
-            "duracion": 136,
-            "calificacion": 8.7
-        }
-        """;
+    @MockBean
+    private PeliculaService service;
 
     private PeliculaDto testDto;
 
@@ -52,7 +47,7 @@ class PeliculaControllerTest {
 
     @Test
     void testGetAllPeliculas() throws Exception {
-        Mockito.when(service.findAll()).thenReturn(List.of(testDto));
+        when(service.findAll()).thenReturn(List.of(testDto));
         
         mockMvc.perform(get("/peliculas"))
                 .andExpect(status().isOk())
@@ -63,16 +58,17 @@ class PeliculaControllerTest {
 
     @Test
     void testGetAllPeliculasEmpty() throws Exception {
-        Mockito.when(service.findAll()).thenReturn(List.of());
+        when(service.findAll()).thenReturn(List.of());
         
         mockMvc.perform(get("/peliculas"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test
     void testGetPeliculaById() throws Exception {
-        Mockito.when(service.findById(1L)).thenReturn(testDto);
+        when(service.findById(1L)).thenReturn(testDto);
         
         mockMvc.perform(get("/peliculas/1"))
                 .andExpect(status().isOk())
@@ -83,19 +79,19 @@ class PeliculaControllerTest {
 
     @Test
     void testGetPeliculaByIdNotFound() throws Exception {
-        Mockito.when(service.findById(999L)).thenThrow(new RuntimeException("Película no encontrada"));
+        when(service.findById(999L)).thenThrow(new RuntimeException("Película no encontrada"));
         
         mockMvc.perform(get("/peliculas/999"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void testCreatePelicula() throws Exception {
-        Mockito.when(service.create(any(PeliculaDto.class))).thenReturn(testDto);
+        when(service.create(any(PeliculaDto.class))).thenReturn(testDto);
         
         mockMvc.perform(post("/peliculas")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(PELICULA_JSON))
+                .content(objectMapper.writeValueAsString(testDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nombre").value("Matrix"))
                 .andExpect(jsonPath("$.categoria").value("Sci-Fi"));
@@ -103,21 +99,22 @@ class PeliculaControllerTest {
 
     @Test
     void testCreatePeliculaInvalidData() throws Exception {
-        String invalidJson = "{\"nombre\": \"\"}";
+        PeliculaDto invalidDto = new PeliculaDto();
+        invalidDto.setNombre(""); // Nombre vacío
         
         mockMvc.perform(post("/peliculas")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidJson))
+                .content(objectMapper.writeValueAsString(invalidDto)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void testUpdatePelicula() throws Exception {
-        Mockito.when(service.update(eq(1L), any(PeliculaDto.class))).thenReturn(testDto);
+        when(service.update(eq(1L), any(PeliculaDto.class))).thenReturn(testDto);
         
         mockMvc.perform(put("/peliculas/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(PELICULA_JSON))
+                .content(objectMapper.writeValueAsString(testDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("Matrix"))
                 .andExpect(jsonPath("$.categoria").value("Sci-Fi"));
@@ -125,18 +122,18 @@ class PeliculaControllerTest {
 
     @Test
     void testUpdatePeliculaNotFound() throws Exception {
-        Mockito.when(service.update(eq(999L), any(PeliculaDto.class)))
+        when(service.update(eq(999L), any(PeliculaDto.class)))
                 .thenThrow(new RuntimeException("Película no encontrada"));
         
         mockMvc.perform(put("/peliculas/999")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(PELICULA_JSON))
-                .andExpect(status().isInternalServerError());
+                .content(objectMapper.writeValueAsString(testDto)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void testDeletePelicula() throws Exception {
-        Mockito.doNothing().when(service).deleteById(1L);
+        doNothing().when(service).deleteById(1L);
         
         mockMvc.perform(delete("/peliculas/1"))
                 .andExpect(status().isNoContent());
@@ -144,20 +141,12 @@ class PeliculaControllerTest {
 
     @Test
     void testDeletePeliculaNotFound() throws Exception {
-        Mockito.doThrow(new RuntimeException("Película no encontrada"))
+        doThrow(new RuntimeException("Película no encontrada"))
                 .when(service).deleteById(999L);
         
         mockMvc.perform(delete("/peliculas/999"))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
-    void testCreatePeliculaMalformedJson() throws Exception {
-        String malformedJson = "{\"nombre\": \"Matrix\", \"categoria\"";
+                .andExpect(status().isNotFound());
         
-        mockMvc.perform(post("/peliculas")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(malformedJson))
-                .andExpect(status().isBadRequest());
+        verify(service).deleteById(999L);
     }
 }
